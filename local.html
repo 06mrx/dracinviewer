@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xDracin Player - Video Playlist Player</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white min-h-screen p-6">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                🎬 xDracin Player
+            </h1>
+            <p class="text-gray-400 text-sm">
+                Thanks to <span class="text-blue-400 font-semibold">MRXaa</span> and <span class="text-purple-400 font-semibold">Claude AI</span> ✨
+            </p>
+        </div>
+        
+        <!-- Form Input -->
+        <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 mb-6 shadow-2xl border border-gray-700">
+            <div class="mb-4 p-4 bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border border-yellow-600/50 rounded-xl text-sm backdrop-blur-sm">
+                <strong class="text-yellow-300 flex items-center gap-2 mb-2">
+                    <span class="text-xl">💡</span> Cara dapat URL Video:
+                </strong>
+                <ul class="list-disc ml-5 mt-2 space-y-2 text-gray-300">
+                    <li>Pergi ke <a href="https://nontondracin.com" target="_blank" class="text-blue-400 hover:text-blue-300 underline font-medium">nontondracin.com</a></li>
+                    <li>Cari video dan pilih episode, lalu salin URL-nya. <br/>
+                        Contoh: <code class="bg-gray-700/70 px-2 py-1 rounded text-xs">https://nontondracin.com/id/stream/drama/ep-<span class="bg-red-500 px-1 rounded">0</span></code>
+                    </li>
+                    <li>Hapus angka terakhir (yang merah), paste ke form di bawah. <br/>
+                        Hasil: <code class="bg-gray-700/70 px-2 py-1 rounded text-xs">https://nontondracin.com/id/stream/drama/ep-</code>
+                    </li>
+                    <li>Isi episode awal sampai akhir yang mau ditonton</li>
+                </ul>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-gray-300">URL Video tanpa nomor episode:</label>
+                    <input type="text" id="baseUrl" 
+                        placeholder="https://nontondracin.com/id/stream/drama/ep-"
+                        class="w-full px-4 py-3 bg-gray-700/50 backdrop-blur-sm rounded-xl focus:ring-2 focus:ring-blue-500 outline-none border border-gray-600 transition-all">
+                    <p class="text-xs text-red-400 mt-2">⚠️ Salin URL video dan hapus nomor episode-nya</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-2 text-gray-300">Episode Awal:</label>
+                        <input type="number" id="startEp" value="1" min="1"
+                            class="w-full px-4 py-3 bg-gray-700/50 backdrop-blur-sm rounded-xl focus:ring-2 focus:ring-blue-500 outline-none border border-gray-600 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-2 text-gray-300">Episode Akhir:</label>
+                        <input type="number" id="endEp" value="10" min="1"
+                            class="w-full px-4 py-3 bg-gray-700/50 backdrop-blur-sm rounded-xl focus:ring-2 focus:ring-blue-500 outline-none border border-gray-600 transition-all">
+                    </div>
+                </div>
+                
+                <button onclick="generatePlaylist()" 
+                    class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-6 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg">
+                    🎯 Generate Playlist
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="hidden text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+            <p class="mt-4 text-lg text-gray-300">Mengambil data video...</p>
+        </div>
+
+        <!-- Video Player -->
+        <div id="playerSection" class="hidden bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 mb-6 shadow-2xl border border-gray-700">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent" id="currentTitle">Episode 1</h2>
+                <label class="flex items-center gap-3 cursor-pointer bg-gray-700/50 px-4 py-2 rounded-lg backdrop-blur-sm border border-gray-600 hover:bg-gray-700 transition-all">
+                    <input type="checkbox" id="autoplayToggle" checked class="w-5 h-5 accent-blue-500">
+                    <span class="font-medium">Autoplay</span>
+                </label>
+            </div>
+            <video id="videoPlayer" controls class="w-full rounded-xl bg-black shadow-2xl" controlsList="nodownload">
+                <source id="videoSource" type="video/mp4">
+                Browser Anda tidak mendukung video player.
+            </video>
+            <div class="flex gap-3 mt-4">
+                <button onclick="playPrevious()" class="flex-1 bg-gray-700/50 hover:bg-gray-600 px-4 py-3 rounded-xl transition-all font-semibold backdrop-blur-sm border border-gray-600 transform hover:scale-[1.02] active:scale-[0.98]">
+                    ⏮️ Previous
+                </button>
+                <button onclick="playNext()" class="flex-1 bg-gray-700/50 hover:bg-gray-600 px-4 py-3 rounded-xl transition-all font-semibold backdrop-blur-sm border border-gray-600 transform hover:scale-[1.02] active:scale-[0.98]">
+                    Next ⏭️
+                </button>
+            </div>
+        </div>
+
+        <!-- Playlist -->
+        <div id="playlistSection" class="hidden bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-2xl border border-gray-700">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                <span>📋 Playlist</span>
+                <span class="bg-blue-600 px-3 py-1 rounded-full text-sm">
+                    <span id="playlistCount">0</span> video
+                </span>
+            </h2>
+            <div id="playlist" class="space-y-2 max-h-96 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800"></div>
+        </div>
+
+        <!-- Log -->
+        <div id="logSection" class="hidden bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 mt-6 shadow-2xl border border-gray-700">
+            <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
+                📝 Log Activity
+            </h2>
+            <div id="log" class="text-sm text-gray-400 space-y-1 max-h-48 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 font-mono"></div>
+        </div>
+    </div>
+
+    <style>
+        /* Custom scrollbar */
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 8px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #1f2937;
+            border-radius: 10px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 10px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+    </style>
+
+    <script>
+        let playlist = [];
+        let currentIndex = 0;
+
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('log');
+            const logSection = document.getElementById('logSection');
+            logSection.classList.remove('hidden');
+            
+            const colors = {
+                info: 'text-blue-400',
+                success: 'text-green-400',
+                error: 'text-red-400',
+                warning: 'text-yellow-400'
+            };
+            
+            const entry = document.createElement('div');
+            entry.className = colors[type] || colors.info;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        async function fetchVideoUrl(pageUrl) {
+            try {
+                const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                const response = await fetch(proxyUrl + encodeURIComponent(pageUrl));
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const html = await response.text();
+                
+                const customPattern = document.getElementById('customPattern')?.value.trim();
+                if (customPattern) {
+                    try {
+                        const regex = new RegExp(customPattern);
+                        const match = html.match(regex);
+                        if (match && match[1]) {
+                            addLog(`✓ Custom pattern berhasil!`, 'success');
+                            return match[1].replace(/\\\//g, '/');
+                        }
+                    } catch (e) {
+                        addLog(`Custom pattern error: ${e.message}`, 'error');
+                    }
+                }
+                
+                const patterns = [
+                    /initialSrc\s*=\s*"([^"]+)"/,
+                    /initialSrc\s*:\s*"([^"]+)"/,
+                    /initialSrc\s*=\s*'([^']+)'/,
+                    /initialSrc\s*:\s*'([^']+)'/,
+                    /"file"\s*:\s*"([^"]+\.mp4[^"]*)"/,
+                    /'file'\s*:\s*'([^']+\.mp4[^']*)'/,
+                    /src\s*:\s*"([^"]+\.mp4[^"]*)"/,
+                    /src\s*:\s*'([^']+\.mp4[^']*)'/,
+                    /<source[^>]+src=["']([^"']+\.mp4[^"']*)["']/,
+                    /<video[^>]+src=["']([^"']+\.mp4[^"']*)["']/,
+                    /https?:\/\/[^\s"'<>]+\.mp4[^\s"'<>]*/i
+                ];
+                
+                for (const pattern of patterns) {
+                    const match = html.match(pattern);
+                    if (match) {
+                        let url = match[1] || match[0];
+                        url = url.replace(/\\\//g, '/');
+                        url = url.replace(/\\u0026/g, '&');
+                        
+                        if (url.startsWith('http')) {
+                            return url;
+                        }
+                    }
+                }
+                
+                addLog('❌ Pattern tidak ditemukan. Cek console untuk HTML', 'error');
+                console.log('=== HTML CONTENT ===');
+                console.log(html.substring(0, 2000));
+                
+                return null;
+            } catch (e) {
+                addLog(`Error fetching ${pageUrl}: ${e.message}`, 'error');
+                return null;
+            }
+        }
+
+        async function generatePlaylist() {
+            const baseUrl = document.getElementById('baseUrl').value.trim();
+            const startEp = parseInt(document.getElementById('startEp').value);
+            const endEp = parseInt(document.getElementById('endEp').value);
+            
+            if (!baseUrl) {
+                alert('Masukkan URL dasar!');
+                return;
+            }
+            
+            if (startEp > endEp) {
+                alert('Episode awal harus lebih kecil atau sama dengan episode akhir!');
+                return;
+            }
+
+            document.getElementById('loading').classList.remove('hidden');
+            playlist = [];
+            currentIndex = 0;
+            
+            addLog(`Memulai generate playlist dari episode ${startEp} sampai ${endEp}`, 'info');
+
+            for (let i = startEp; i <= endEp; i++) {
+                const pageUrl = `${baseUrl}${i-1}`;
+                addLog(`Mengambil episode ${i}...`, 'info');
+                
+                const videoUrl = await fetchVideoUrl(pageUrl);
+                
+                if (videoUrl) {
+                    playlist.push({
+                        episode: i,
+                        pageUrl: pageUrl,
+                        videoUrl: videoUrl
+                    });
+                    addLog(`✓ Episode ${i} berhasil ditambahkan`, 'success');
+                } else {
+                    addLog(`✗ Episode ${i} gagal diambil`, 'error');
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            document.getElementById('loading').classList.add('hidden');
+            
+            if (playlist.length > 0) {
+                displayPlaylist();
+                playVideo(0);
+                addLog(`Playlist selesai! Total ${playlist.length} video`, 'success');
+            } else {
+                addLog('Tidak ada video yang berhasil diambil', 'error');
+            }
+        }
+
+        function displayPlaylist() {
+            const playlistDiv = document.getElementById('playlist');
+            const playlistSection = document.getElementById('playlistSection');
+            const playlistCount = document.getElementById('playlistCount');
+            
+            playlistSection.classList.remove('hidden');
+            playlistCount.textContent = playlist.length;
+            playlistDiv.innerHTML = '';
+
+            playlist.forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `p-4 rounded-xl cursor-pointer transition-all transform ${
+                    index === currentIndex 
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 scale-[1.02] shadow-lg' 
+                        : 'bg-gray-700/50 hover:bg-gray-600/70 backdrop-blur-sm border border-gray-600'
+                }`;
+                itemDiv.onclick = () => playVideo(index);
+                itemDiv.innerHTML = `
+                    <div class="font-bold text-lg flex items-center gap-2">
+                        <span class="text-2xl">${index === currentIndex ? '▶️' : '📺'}</span>
+                        Episode ${item.episode}
+                    </div>
+                `;
+                playlistDiv.appendChild(itemDiv);
+            });
+        }
+
+        function playVideo(index) {
+            if (index < 0 || index >= playlist.length) return;
+            
+            currentIndex = index;
+            const item = playlist[index];
+            
+            document.getElementById('playerSection').classList.remove('hidden');
+            document.getElementById('currentTitle').textContent = `Episode ${item.episode}`;
+            document.getElementById('videoSource').src = item.videoUrl;
+            document.getElementById('videoPlayer').load();
+            document.getElementById('videoPlayer').play();
+            
+            displayPlaylist();
+            addLog(`Memutar Episode ${item.episode}`, 'info');
+        }
+
+        function playNext() {
+            if (currentIndex < playlist.length - 1) {
+                playVideo(currentIndex + 1);
+            }
+        }
+
+        function playPrevious() {
+            if (currentIndex > 0) {
+                playVideo(currentIndex - 1);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const video = document.getElementById('videoPlayer');
+            video.addEventListener('ended', () => {
+                const autoplay = document.getElementById('autoplayToggle').checked;
+                if (autoplay && currentIndex < playlist.length - 1) {
+                    addLog('Autoplay: Lanjut ke episode berikutnya', 'info');
+                    playNext();
+                } else if (currentIndex === playlist.length - 1) {
+                    addLog('Playlist selesai!', 'success');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
