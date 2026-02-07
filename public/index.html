@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Drama Player</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #e5e7eb;
+      font-family: system-ui;
+      padding: 20px;
+    }
+    .box {
+      max-width: 800px;
+      margin: auto;
+      background: #020617;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 6px;
+      border: none;
+    }
+    button {
+      background: #22c55e;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    li {
+      margin: 8px 0;
+      cursor: pointer;
+      color: #38bdf8;
+    }
+    video {
+      width: 100%;
+      margin-top: 20px;
+      background: black;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <h2>🎬 Drama Episode Player</h2>
+
+  <input id="url" placeholder="URL drama" />
+  <input id="start" type="number" value="1" />
+  <input id="end" type="number" value="3" />
+
+  <button onclick="loadEpisodes()">Generate</button>
+
+  <ul id="list"></ul>
+
+  <video id="player" controls></video>
+</div>
+
+<script>
+  const list = document.getElementById("list");
+  const player = document.getElementById("player");
+
+  function cleanTitle(url) {
+    const slug = url.split("/").pop().replace(/-\d+$/, "");
+    return slug
+      .split("-")
+      .map(w => w[0].toUpperCase() + w.slice(1))
+      .join(" ");
+  }
+
+  async function loadEpisodes() {
+    list.innerHTML = "";
+    player.src = "";
+
+    const url = document.getElementById("url").value.trim();
+    const start = document.getElementById("start").value;
+    const end = document.getElementById("end").value;
+    const title = cleanTitle(url);
+
+    const res = await fetch(
+      `/api/episodes?url=${encodeURIComponent(url)}&start=${start}&end=${end}`
+    );
+
+    const data = await res.json();
+
+    data.forEach(item => {
+      const li = document.createElement("li");
+
+      if (item.videoUrl) {
+        li.textContent = `${title} – Episode ${item.ep}`;
+        li.onclick = () => {
+          player.src = item.videoUrl;
+          player.play();
+        };
+      } else {
+        li.textContent = `❌ Episode ${item.ep} (${item.error})`;
+      }
+
+      list.appendChild(li);
+    });
+  }
+</script>
+
+</body>
+</html>
